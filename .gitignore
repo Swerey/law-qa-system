@@ -1,0 +1,47 @@
+# ===== Python 缓存 / 虚拟环境 =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# ===== IDE =====
+.idea/
+.vscode/
+
+# ===== 模型权重（大文件，不提交）=====
+models/
+
+# ===== 向量数据库 =====
+chromadb_data/
+
+# ===== 数据集 =====
+datasets/
+
+# ===== 输出文档 / 报告 =====
+output/
+
+# ===== 数据库文件 =====
+*.db
+*.sqlite3
+
+# ===== 环境变量与密钥 =====
+.env
+*.pem
+*.key
+
+# ===== 调试 / 临时残留文件 =====
+11
+temp_debug.txt
+test.py
+ttest.py
+ttt.py
+templates/test.html
+users/Service/test_login.py
+
+# ===== 日志 / 构建记录 =====
+*.log
+chat/util/build_err.txt
+chat/util/build_log.txt

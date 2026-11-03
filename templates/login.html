@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvis · 登录注册</title>
+    <script src="/static/js/vue.js"></script>
+    <script src="/static/axios/dist/axios.js"></script>
+    <link rel="stylesheet" href="/static/element-ui/lib/theme-chalk/index.css">
+    <script src="/static/element-ui/lib/index.js"></script>
+    <style>
+        :root {
+            --bg-primary: #F8F9FA;
+            --bg-white: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6C757D;
+            --text-muted: #ADB5BD;
+            --accent: #1A1A1A;
+            --border: #E8EAED;
+            --border-light: #F1F3F4;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 440px;
+            padding: 24px;
+        }
+
+        /* ===== 品牌 ===== */
+        .brand {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .brand-icon {
+            width: 52px;
+            height: 52px;
+            background: var(--accent);
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 22px;
+            font-weight: 700;
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .brand-icon::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #E74C3C;
+            border-radius: 50%;
+            position: absolute;
+            top: 6px;
+            right: 8px;
+        }
+
+        .brand-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .brand-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ===== 卡片 ===== */
+        .card {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        /* ===== 标签切换 ===== */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            user-select: none;
+        }
+
+        .tab-item:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-item.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ===== 表单 ===== */
+        .form-body {
+            padding: 28px 32px 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 46px;
+            padding: 0 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.06);
+            background: var(--bg-white);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-icon-wrapper {
+            position: relative;
+        }
+
+        .input-icon-wrapper .form-input {
+            padding-right: 44px;
+        }
+
+        .input-toggle-pwd {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 13px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: color 0.15s;
+        }
+
+        .input-toggle-pwd:hover {
+            color: var(--text-primary);
+        }
+
+        .form-error {
+            font-size: 12px;
+            color: #E74C3C;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===== 按钮 ===== */
+        .btn-primary {
+            width: 100%;
+            height: 46px;
+            border: none;
+            border-radius: 10px;
+            background: var(--accent);
+            color: #FFFFFF;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, opacity 0.2s;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary:disabled {
+            background: #CCC;
+            cursor: not-allowed;
+        }
+
+        .btn-primary.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* ===== 提示信息 ===== */
+        .form-tip {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 16px;
+            line-height: 1.6;
+        }
+
+        .form-tip a {
+            color: var(--accent);
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
+        /* ===== 成功/错误横幅 ===== */
+        .alert {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            line-height: 1.5;
+        }
+
+        .alert-success {
+            background: #EBFAF0;
+            color: #27AE60;
+            border: 1px solid #C3E6CB;
+        }
+
+        .alert-error {
+            background: #FDEBEB;
+            color: #C0392B;
+            border: 1px solid #F5C6CB;
+        }
+
+        /* ===== 动画 ===== */
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s;
+        }
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            animation: slideUp 0.4s ease;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 480px) {
+            #app { padding: 12px; }
+            .form-body { padding: 20px 20px 24px; }
+            .brand { margin-bottom: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        {% raw %}
+        <!-- 品牌 -->
+        <div class="brand">
+            <div class="brand-icon">M</div>
+            <div class="brand-name">Marvis</div>
+            <p class="brand-desc">法律智能助手 · 登录即可使用</p>
+        </div>
+
+        <!-- 卡片 -->
+        <div class="card">
+            <!-- 标签切换 -->
+            <div class="tabs">
+                <div class="tab-item" :class="{ active: mode === 'login' }" @click="switchTab('login')">
+                    登录
+                </div>
+                <div class="tab-item" :class="{ active: mode === 'register' }" @click="switchTab('register')">
+                    注册
+                </div>
+            </div>
+
+            <!-- 表单体 -->
+            <div class="form-body">
+                <!-- 提示信息 -->
+                <div v-if="alertMsg" class="alert" :class="alertType === 'success' ? 'alert-success' : 'alert-error'">
+                    {{ alertMsg }}
+                </div>
+
+                <!-- 登录表单 -->
+                <template v-if="mode === 'login'">
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input
+                            class="form-input"
+                            type="text"
+                            v-model.trim="loginForm.username"
+                            placeholder="请输入用户名"
+                            @keydown.enter="handleLogin"
+                            autocomplete="username"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <div class="input-icon-wrapper">
+                            <input
+                                class="form-input"
+                                :type="showLoginPwd ? 'text' : 'password'"
+                                v-model="loginForm.password"
+                                placeholder="请输入密码"
+                                @keydown.enter="handleLogin"
+                                autocomplete="current-password"
+                            />
+                            <button class="input-toggle-pwd" type="button" @click="showLoginPwd = !showLoginPwd">
+                                {{ showLoginPwd ? '隐藏' : '显示' }}
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="loginError" class="form-error">⚠ {{ loginError }}</div>
+                    <button
+                        class="btn-primary"
+                        :class="{ loading: loginLoading }"
+                        :disabled="loginLoading"
+                        @click="handleLogin"
+                    >
+                        {{ loginLoading ? '登录中...' : '登录' }}
+                    </button>
+                    <p class="form-tip">
+                        还没有账号？<a @click="switchTab('register')">立即注册</a>
+                    </p>
+                </template>
+
+                <!-- 注册表单 -->
+                <template v-if="mode === 'register'">
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input
+                            class="form-input"
+                            type="text"
+                            v-model.trim="registerForm.username"
+                            placeholder="至少3个字符"
+                            @keydown.enter="handleRegister"
+                            autocomplete="username"
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <div class="input-icon-wrapper">
+                            <input
+                                class="form-input"
+                                :type="showRegPwd ? 'text' : 'password'"
+                                v-model="registerForm.password"
+                                placeholder="至少6个字符"
+                                @keydown.enter="handleRegister"
+                                autocomplete="new-password"
+                            />
+                            <button class="input-toggle-pwd" type="button" @click="showRegPwd = !showRegPwd">
+                                {{ showRegPwd ? '隐藏' : '显示' }}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">确认密码</label>
+                        <input
+                            class="form-input"
+                            type="password"
+                            v-model="registerForm.confirmPassword"
+                            placeholder="请再次输入密码"
+                            @keydown.enter="handleRegister"
+                            autocomplete="new-password"
+                        />
+                    </div>
+                    <div v-if="registerError" class="form-error">⚠ {{ registerError }}</div>
+                    <button
+                        class="btn-primary"
+                        :class="{ loading: registerLoading }"
+                        :disabled="registerLoading"
+                        @click="handleRegister"
+                    >
+                        {{ registerLoading ? '注册中...' : '注册' }}
+                    </button>
+                    <p class="form-tip">
+                        已有账号？<a @click="switchTab('login')">立即登录</a>
+                    </p>
+                </template>
+            </div>
+        </div>
+        {% endraw %}
+    </div>
+
+    <script>
+        {% raw %}
+        new Vue({
+            el: '#app',
+            data: {
+                mode: 'login',          // 'login' | 'register'
+
+                // 登录表单
+                loginForm: {
+                    username: '',
+                    password: ''
+                },
+                showLoginPwd: false,
+                loginLoading: false,
+                loginError: '',
+
+                // 注册表单
+                registerForm: {
+                    username: '',
+                    password: '',
+                    confirmPassword: ''
+                },
+                showRegPwd: false,
+                registerLoading: false,
+                registerError: '',
+
+                // 全局提示
+                alertMsg: '',
+                alertType: 'success',   // 'success' | 'error'
+            },
+            methods: {
+                /* ===== 标签切换 ===== */
+                switchTab(tab) {
+                    this.mode = tab;
+                    this.alertMsg = '';
+                    this.loginError = '';
+                    this.registerError = '';
+                },
+
+                /* ===== 登录 ===== */
+                handleLogin() {
+                    this.loginError = '';
+                    this.alertMsg = '';
+
+                    // 前端校验
+                    if (!this.loginForm.username) {
+                        this.loginError = '请输入用户名';
+                        return;
+                    }
+                    if (!this.loginForm.password) {
+                        this.loginError = '请输入密码';
+                        return;
+                    }
+
+                    this.loginLoading = true;
+                    axios.post('/users/login', {
+                        username: this.loginForm.username,
+                        password: this.loginForm.password
+                    })
+                    .then(res => {
+                        const data = res.data;
+                        if (data.code === 200) {
+                            this.alertMsg = '登录成功，即将跳转到法律顾问界面...';
+                            this.alertType = 'success';
+                            // 将用户信息存入 sessionStorage
+                            sessionStorage.setItem('marvis_user', this.loginForm.username);
+                            if (data.data && data.data.userId) {
+                                sessionStorage.setItem('marvis_user_id', data.data.userId);
+                            }
+                            // 1.5 秒后跳转
+                            setTimeout(() => {
+                                window.location.href = '/chat/goChatStream';
+                            }, 1500);
+                        } else {
+                            this.loginError = data.msg || '登录失败';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('登录请求失败:', err);
+                        this.loginError = '网络错误，请检查网络后重试';
+                    })
+                    .finally(() => {
+                        this.loginLoading = false;
+                    });
+                },
+
+                /* ===== 注册 ===== */
+                handleRegister() {
+                    this.registerError = '';
+                    this.alertMsg = '';
+
+                    // 前端校验
+                    if (!this.registerForm.username) {
+                        this.registerError = '请输入用户名';
+                        return;
+                    }
+                    if (this.registerForm.username.length < 3) {
+                        this.registerError = '用户名至少3个字符';
+                        return;
+                    }
+                    if (!this.registerForm.password) {
+                        this.registerError = '请输入密码';
+                        return;
+                    }
+                    if (this.registerForm.password.length < 6) {
+                        this.registerError = '密码至少6个字符';
+                        return;
+                    }
+                    if (this.registerForm.password !== this.registerForm.confirmPassword) {
+                        this.registerError = '两次输入的密码不一致';
+                        return;
+                    }
+
+                    this.registerLoading = true;
+                    axios.post('/users/register', {
+                        username: this.registerForm.username,
+                        password: this.registerForm.password
+                    })
+                    .then(res => {
+                        const data = res.data;
+                        if (data.code === 200) {
+                            this.alertMsg = '注册成功！正在切换到登录...';
+                            this.alertType = 'success';
+                            // 清空注册表单
+                            this.registerForm.username = '';
+                            this.registerForm.password = '';
+                            this.registerForm.confirmPassword = '';
+                            // 1 秒后切换到登录
+                            setTimeout(() => {
+                                this.switchTab('login');
+                                this.alertMsg = '注册成功，请登录';
+                                this.alertType = 'success';
+                            }, 1000);
+                        } else {
+                            this.registerError = data.msg || '注册失败';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('注册请求失败:', err);
+                        this.registerError = '网络错误，请检查网络后重试';
+                    })
+                    .finally(() => {
+                        this.registerLoading = false;
+                    });
+                }
+            }
+        });
+        {% endraw %}
+    </script>
+</body>
+</html>

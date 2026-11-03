@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Marvis · 法律顾问</title>
+    <script src="/static/js/vue.js"></script>
+    <script src="/static/axios/dist/axios.js"></script>
+    <script src="/static/element-ui/lib/index.js"></script>
+    <link rel="stylesheet" href="/static/element-ui/lib/theme-chalk/index.css">
+    <script src="/static/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #F8F9FA;
+            --bg-white: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6C757D;
+            --text-muted: #ADB5BD;
+            --accent: #1A1A1A;
+            --accent-light: #2C3E50;
+            --border: #E8EAED;
+            --border-light: #F1F3F4;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-full: 50%;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ===== 侧边栏 ===== */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-white);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand {
+            padding: 20px 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-brand .brand-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .sidebar-brand .brand-icon::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #E74C3C;
+            border-radius: 50%;
+            position: absolute;
+            margin-top: -6px;
+            margin-left: 6px;
+        }
+
+        .sidebar-brand .brand-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 4px 12px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar { width: 3px; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: #DDD; border-radius: 10px; }
+
+        .nav-section {
+            margin-bottom: 16px;
+        }
+
+        .nav-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 8px 8px 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13.5px;
+            color: var(--text-primary);
+            transition: background 0.15s;
+            margin-bottom: 1px;
+        }
+
+        .nav-item:hover {
+            background: var(--border-light);
+        }
+
+        .nav-item.active {
+            background: #1A1A1A;
+            color: #FFFFFF;
+        }
+
+        .nav-item .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 15px;
+            opacity: 0.7;
+        }
+
+        .nav-item.active .nav-icon { opacity: 1; }
+
+        /* ===== 历史记录 ===== */
+        .history-item {
+            padding: 8px 12px;
+            height: auto;
+            align-items: flex-start;
+        }
+
+        .history-item-text {
+            flex: 1;
+            min-width: 0;
+            line-height: 1.4;
+        }
+
+        .history-title {
+            font-size: 13px;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item.active .history-title {
+            color: #FFFFFF;
+        }
+
+        .history-time {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .history-item.active .history-time {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-new-chat {
+            float: right;
+            border: none;
+            background: var(--border-light);
+            color: var(--text-secondary);
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .btn-new-chat:hover {
+            background: var(--accent);
+            color: #FFFFFF;
+        }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ===== 主聊天区 ===== */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-header-left .header-avatar {
+            width: 34px;
+            height: 34px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            position: relative;
+        }
+
+        .chat-header-left .header-avatar::after {
+            content: '';
+            width: 5px;
+            height: 5px;
+            background: #E74C3C;
+            border-radius: 50%;
+            position: absolute;
+            top: 4px;
+            right: 6px;
+        }
+
+        .chat-header-left h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chat-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: #EBFAF0;
+            color: #27AE60;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #27AE60;
+        }
+
+        /* ===== 消息区 ===== */
+        .message-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+            scroll-behavior: smooth;
+        }
+
+        .message-box::-webkit-scrollbar { width: 4px; }
+        .message-box::-webkit-scrollbar-thumb { background: #DDD; border-radius: 10px; }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .empty-state .empty-icon {
+            width: 64px;
+            height: 64px;
+            background: #1A1A1A;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 28px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .empty-state .empty-icon::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            background: #E74C3C;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            right: 12px;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            max-width: 360px;
+            line-height: 1.6;
+        }
+
+        /* ===== 消息条目 ===== */
+        .message-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-item.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-item .msg-avatar {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            user-select: none;
+        }
+
+        .message-item.ai .msg-avatar {
+            background: #1A1A1A;
+            color: #FFFFFF;
+        }
+
+        .message-item.user .msg-avatar {
+            background: #2C3E50;
+            color: #FFFFFF;
+        }
+
+        .message-body {
+            max-width: 72%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .message-item.user .message-body {
+            align-items: flex-end;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 0 6px;
+        }
+
+        .message-meta .meta-role {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .message-item.ai .meta-role { color: #1A1A1A; }
+
+        .message-bubble {
+            padding: 10px 14px;
+            border-radius: 14px;
+            background: #FFFFFF;
+            color: var(--text-primary);
+            word-break: break-word;
+            line-height: 1.7;
+            font-size: 14px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+        }
+
+        .message-item.user .message-bubble {
+            background: #1A1A1A;
+            color: #FFFFFF;
+            border: none;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-item.ai .message-bubble {
+            border-bottom-left-radius: 4px;
+        }
+
+        /* ===== Markdown 渲染样式 ===== */
+        .message-bubble h1, .message-bubble h2, .message-bubble h3 {
+            margin: 8px 0 6px;
+            font-weight: 600;
+        }
+
+        .message-bubble h1 { font-size: 1.2em; }
+        .message-bubble h2 { font-size: 1.1em; }
+        .message-bubble h3 { font-size: 1em; }
+
+        .message-bubble p { margin: 6px 0; }
+
+        .message-bubble ul, .message-bubble ol {
+            padding-left: 20px;
+            margin: 6px 0;
+        }
+
+        .message-bubble li { margin: 3px 0; }
+
+        .message-bubble code {
+            background: rgba(0,0,0,0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-family: "SF Mono", "Fira Code", monospace;
+        }
+
+        .message-item.user .message-bubble code {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+
+        .message-bubble pre {
+            background: #F8F9FA;
+            padding: 12px 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+            font-size: 0.85em;
+            border: 1px solid var(--border-light);
+        }
+
+        .message-bubble pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .message-bubble blockquote {
+            border-left: 3px solid #1A1A1A;
+            padding-left: 12px;
+            margin: 8px 0;
+            color: var(--text-secondary);
+        }
+
+        .message-bubble strong {
+            font-weight: 600;
+        }
+
+        /* ===== AI 操作按钮 ===== */
+        .msg-actions {
+            display: flex;
+            gap: 6px;
+            padding: 2px 6px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .message-item:hover .msg-actions {
+            opacity: 1;
+        }
+
+        .msg-actions button {
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+
+        .msg-actions button:hover {
+            background: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        /* ===== 思考中 ===== */
+        .thinking {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 6px 14px;
+            margin-bottom: 12px;
+        }
+
+        .thinking .dot {
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: pulse 1.4s infinite;
+        }
+
+        .thinking .dot:nth-child(2) { animation-delay: 0.2s; }
+        .thinking .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes pulse {
+            0%, 60%, 100% { opacity: 0.2; transform: scale(0.8); }
+            30% { opacity: 1; transform: scale(1); }
+        }
+
+        /* ===== 输入区域 ===== */
+        .input-area-wrapper {
+            padding: 12px 24px 16px;
+            background: var(--bg-primary);
+            flex-shrink: 0;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            background: #FFFFFF;
+            padding: 6px 8px 6px 16px;
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-md);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-area:focus-within {
+            border-color: #1A1A1A;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .input-area textarea {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            outline: none;
+            color: var(--text-primary);
+            resize: none;
+            padding: 8px 0;
+            min-height: 24px;
+            max-height: 120px;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .input-area textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-area .send-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: #1A1A1A;
+            color: #FFFFFF;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .input-area .send-btn:hover {
+            background: #333;
+        }
+
+        .input-area .send-btn:active {
+            transform: scale(0.93);
+        }
+
+        .input-area .send-btn.disabled {
+            background: #DDD;
+            cursor: not-allowed;
+        }
+
+        .input-hint {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            padding-top: 6px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .message-body { max-width: 85%; }
+            .input-area-wrapper { padding: 8px 12px 12px; }
+            .chat-header { padding: 10px 16px; }
+            .message-box { padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        {% raw %}
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">M</div>
+                <span class="brand-name">Marvis</span>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">知识库</div>
+                    <div class="nav-item active">
+                        <span class="nav-icon">⚖️</span> 法律顾问
+                    </div>
+                    <div class="nav-item">
+                        <span class="nav-icon">📄</span> 法律法规
+                    </div>
+                    <div class="nav-item">
+                        <span class="nav-icon">📋</span> 典型案例
+                    </div>
+                </div>
+                <!-- 历史记录 -->
+                <div class="nav-section" v-if="userId">
+                    <div class="nav-section-title">
+                        历史记录
+                        <button class="btn-new-chat" @click="startNewChat" title="新建对话">+</button>
+                    </div>
+                    <div v-if="historyLoading" style="text-align:center;padding:12px;color:var(--text-muted);font-size:12px;">
+                        加载中...
+                    </div>
+                    <div v-else-if="historyList.length === 0" style="text-align:center;padding:12px;color:var(--text-muted);font-size:12px;">
+                        暂无历史记录
+                    </div>
+                    <div v-else
+                         v-for="item in historyList"
+                         :key="item.historyId"
+                         class="nav-item history-item"
+                         :class="{ active: currentHistoryId === item.historyId }"
+                         @click="loadHistoryMessages(item.historyId)">
+                        <span class="nav-icon">💬</span>
+                        <div class="history-item-text">
+                            <div class="history-title">{{ truncateText(item.question, 16) }}</div>
+                            <div class="history-time">{{ item.createTime }}</div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                以上内容由AI生成，仅供参考
+            </div>
+        </aside>
+
+        <!-- 主聊天区 -->
+        <main class="main-chat">
+            <!-- 头部 -->
+            <header class="chat-header">
+                <div class="chat-header-left">
+                    <div class="header-avatar">M</div>
+                    <h2>Marvis · 法律顾问</h2>
+                </div>
+                <div class="chat-header-right">
+                    <span class="status-badge">
+                        <span class="dot"></span> 在线
+                    </span>
+                    <span>{{ messages.length }} 条消息</span>
+                </div>
+            </header>
+
+            <!-- 消息列表 -->
+            <div class="message-box" ref="messageBox">
+                <div v-if="messages.length === 0" class="empty-state">
+                    <div class="empty-icon">M</div>
+                    <h3>Marvis 法律顾问</h3>
+                    <p>基于法律知识库为您提供专业法律咨询。请输入您的问题，我将为您检索相关法律法规并给出建议。</p>
+                </div>
+
+                <div v-for="(item, index) in messages" :key="index"
+                     class="message-item" :class="item.role">
+
+                    <div class="msg-avatar">
+                        {{ item.role === 'ai' ? 'M' : '你' }}
+                    </div>
+
+                    <div class="message-body">
+                        <div class="message-meta">
+                            <span class="meta-role">{{ item.role === 'ai' ? 'Marvis' : '你' }}</span>
+                            <span>{{ item.time }}</span>
+                        </div>
+                        <div class="message-bubble" v-html="renderMarkdown(item.content)"></div>
+                        <div v-if="item.role === 'ai' && item.content" class="msg-actions">
+                            <button @click="copyContent(item.content)" title="复制">📋 复制</button>
+                            <button @click="regenerate(index)" title="重新生成">🔄 重新生成</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="loading" class="thinking">
+                    <span>Marvis 正在检索法律知识库</span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+
+            <!-- 输入区域 -->
+            <div class="input-area-wrapper">
+                <div class="input-area">
+                    <textarea
+                        v-model="question"
+                        @keydown.enter.exact.prevent="send"
+                        placeholder="输入您的法律问题，例如：我被家暴了该怎么办"
+                        rows="1"
+                        ref="inputArea"
+                        @input="autoResize"
+                    ></textarea>
+                    <button
+                        class="send-btn"
+                        :class="{ disabled: !question.trim() || loading }"
+                        @click="send"
+                        :disabled="!question.trim() || loading"
+                    >
+                        ↑
+                    </button>
+                </div>
+                <div class="input-hint">Enter 发送 · 法律建议仅供参考，重大事项请咨询专业律师</div>
+            </div>
+        </main>
+        {% endraw %}
+    </div>
+
+    <script>
+        {% raw %}
+        new Vue({
+            el: '#app',
+            data: {
+                question: '',
+                messages: [],
+                loading: false,
+                // 历史记录相关
+                userId: null,
+                username: '',
+                historyList: [],
+                currentHistoryId: null,
+                historyLoading: false,
+            },
+            mounted() {
+                this.username = sessionStorage.getItem('marvis_user') || '';
+                this.userId = sessionStorage.getItem('marvis_user_id') || '';
+                if (this.userId) {
+                    this.loadHistory();
+                }
+                const now = new Date();
+                const timeStr = this.formatTime(now);
+                this.messages.push({
+                    role: 'ai',
+                    content: '您好，我是 **Marvis 法律顾问**。我基于法律知识库为您提供专业法律咨询，涵盖婚姻家事、劳动人事、合同纠纷、债权债务、公司治理、知识产权等领域。请问有什么可以帮您？',
+                    time: timeStr
+                });
+                this.$nextTick(() => this.scrollToBottom());
+                this.$refs.inputArea.focus();
+            },
+            methods: {
+                formatTime(date) {
+                    return date.getHours().toString().padStart(2, '0') + ':' +
+                           date.getMinutes().toString().padStart(2, '0');
+                },
+                truncateText(text, maxLen) {
+                    if (!text) return '';
+                    return text.length > maxLen ? text.slice(0, maxLen) + '...' : text;
+                },
+                /* ===== 历史记录 ===== */
+                loadHistory() {
+                    this.historyLoading = true;
+                    axios.get('/history/list', { params: { userId: this.userId } })
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                this.historyList = res.data.data || [];
+                            }
+                        })
+                        .catch(err => {
+                            console.error('加载历史记录失败:', err);
+                        })
+                        .finally(() => {
+                            this.historyLoading = false;
+                        });
+                },
+                loadHistoryMessages(historyId) {
+                    this.currentHistoryId = historyId;
+                    axios.get('/history/Messages', { params: { historyId: historyId } })
+                        .then(res => {
+                            if (res.data.code === 200) {
+                                const rawMessages = res.data.data || [];
+                                this.messages = rawMessages.map(m => ({
+                                    role: m.role === 'user' ? 'user' : 'ai',
+                                    content: m.content,
+                                    time: this.formatTime(new Date())
+                                }));
+                                this.$nextTick(() => this.scrollToBottom());
+                            }
+                        })
+                        .catch(err => {
+                            console.error('加载历史消息失败:', err);
+                        });
+                },
+                startNewChat() {
+                    this.messages = [];
+                    this.currentHistoryId = null;
+                    const now = new Date();
+                    this.messages.push({
+                        role: 'ai',
+                        content: '您好，我是 **Marvis 法律顾问**。开始新的对话，请问有什么可以帮您？',
+                        time: this.formatTime(now)
+                    });
+                    this.$nextTick(() => this.scrollToBottom());
+                    this.$refs.inputArea.focus();
+                    // 刷新历史列表
+                    if (this.userId) {
+                        this.loadHistory();
+                    }
+                },
+                renderMarkdown(content) {
+                    if (!content) return '';
+                    if (typeof marked === 'undefined') {
+                        return content.replace(/\n/g, '<br>');
+                    }
+                    const renderer = (marked.parse || marked).bind(marked);
+                    return renderer(content);
+                },
+                autoResize() {
+                    const el = this.$refs.inputArea;
+                    el.style.height = 'auto';
+                    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+                },
+                scrollToBottom() {
+                    const box = this.$refs.messageBox;
+                    if (box) {
+                        box.scrollTop = box.scrollHeight;
+                    }
+                },
+                copyContent(content) {
+                    navigator.clipboard.writeText(content).then(() => {
+                        this.$message({ message: '已复制到剪贴板', type: 'success', duration: 1500 });
+                    }).catch(() => {
+                        this.$message({ message: '复制失败', type: 'error', duration: 1500 });
+                    });
+                },
+                regenerate(index) {
+                    if (index < 1) return;
+                    const prevMsg = this.messages[index - 1];
+                    if (prevMsg && prevMsg.role === 'user') {
+                        this.messages.splice(index);
+                        this.loading = false;
+
+                        // 构建历史（splice后剩下的消息）
+                        const remaining = this.messages.slice(-12);
+                        const recentHistory = remaining.map(m => ({
+                            role: m.role === 'user' ? 'user' : 'assistant',
+                            content: m.content
+                        }));
+                        const historyJson = encodeURIComponent(JSON.stringify(recentHistory));
+                        this.sendQuestion(prevMsg.content, historyJson);
+                    }
+                },
+
+
+                send() {
+                    const q = this.question.trim();
+                    if (!q || this.loading) return;
+
+                    // 构建最近6轮对话历史（不含当前问题）
+                    const historySlice = this.messages.slice(-12);
+                    const recentHistory = historySlice.map(m => ({
+                        role: m.role === 'user' ? 'user' : 'assistant',
+                        content: m.content
+                    }));
+                    const historyJson = encodeURIComponent(JSON.stringify(recentHistory));
+
+                    this.question = '';
+                    this.$nextTick(() => {
+                        const el = this.$refs.inputArea;
+                        el.style.height = 'auto';
+                    });
+
+                    this.sendQuestion(q, historyJson);
+                },
+                saveCurrentExchange(userQuestion) {
+                    if (!this.userId) return;
+                    const aiMessages = this.messages.filter(m => m.role === 'ai');
+                    const lastAiMsg = aiMessages[aiMessages.length - 1];
+                    if (!lastAiMsg || !lastAiMsg.content) return;
+
+                    const parentId = this.currentHistoryId ? String(this.currentHistoryId) : '0';
+                    axios.post('/history/Save', {
+                        question: userQuestion,
+                        answer: lastAiMsg.content,
+                        parentId: parentId,
+                        userId: String(this.userId)
+                    }).then(res => {
+                        if (res.data.code === 200 && !this.currentHistoryId) {
+                            this.currentHistoryId = res.data.data;
+                            this.loadHistory();
+                        }
+                    }).catch(err => {
+                        console.error('保存历史记录失败:', err);
+                    });
+                },
+                sendQuestion(q, historyJson) {
+                    const timeStr = this.formatTime(new Date());
+                    this.messages.push({
+                        role: 'user',
+                        content: q,
+                        time: timeStr
+                    });
+                    this.loading = true;
+                    this.$nextTick(() => this.scrollToBottom());
+
+                    let url = '/chat/chatStream?question=' + encodeURIComponent(q);
+                    if (historyJson) {
+                        url += '&history=' + historyJson;
+                    }
+                    const eventSource = new EventSource(url);
+
+                    eventSource.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data.content === '[DONE]') {
+                            eventSource.close();
+                            this.loading = false;
+                            this.saveCurrentExchange(q);
+                            return;
+                        }
+                        const last = this.messages[this.messages.length - 1];
+                        if (last && last.role === 'ai') {
+                            last.content += data.content;
+                        } else {
+                            this.messages.push({
+                                role: 'ai',
+                                content: data.content,
+                                time: this.formatTime(new Date())
+                            });
+                        }
+                        this.$nextTick(() => this.scrollToBottom());
+                    };
+
+                    eventSource.onerror = () => {
+                        eventSource.close();
+                        this.loading = false;
+                        const last = this.messages[this.messages.length - 1];
+                        if (!last || last.role !== 'ai' || !last.content) {
+                            this.messages.push({
+                                role: 'ai',
+                                content: '抱歉，服务暂时不可用，请稍后重试。',
+                                time: this.formatTime(new Date())
+                            });
+                        }
+                    };
+                }
+            }
+        });
+        {% endraw %}
+    </script>
+</body>
+</html>
